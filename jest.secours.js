@@ -2,18 +2,24 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
+  extensionsToTreatAsEsm: ['.ts'],
   transform: {
-    // On capture tous les fichiers .ts
-    '^.+\\.ts$': ['ts-jest', {
-      // On force la compilation en CommonJS (le format que Jest préfère)
-      // Cela écrase la configuration par défaut d'Angular qui est en ESM
+    // On dit à ts-jest de gérer les fichiers .ts, .js ET .mjs (le format d'Angular)
+    '^.+\\.(ts|js|mjs)$': ['ts-jest', {
+      useESM: true,
       tsconfig: {
+        allowJs: true,
         module: 'commonjs',
         esModuleInterop: true,
       },
       isolatedModules: true,
     }],
   },
-  // On ignore le build Angular pour ne pas tester deux fois
+  // C'EST LA LIGNE MAGIQUE :
+  // On dit "Ignore node_modules SAUF le dossier @angular"
+  transformIgnorePatterns: [
+    'node_modules/(?!.*\\.mjs$|@angular)'
+  ],
+  moduleFileExtensions: ['ts', 'js', 'mjs', 'json', 'node'],
   modulePathIgnorePatterns: ['<rootDir>/dist/', '<rootDir>/browser/'],
 };
