@@ -1,3 +1,4 @@
+import '@angular/compiler'; // <--- AJOUTER CETTE LIGNE
 import {config} from 'dotenv';
 
 config();
