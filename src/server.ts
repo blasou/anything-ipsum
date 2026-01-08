@@ -1,6 +1,7 @@
-import '@angular/compiler'; // <--- AJOUTER CETTE LIGNE
-import {config} from 'dotenv';
+// CORRECTION 1 : Indispensable pour éviter l'erreur "JIT compilation failed" avec tsx
+import '@angular/compiler';
 
+import {config} from 'dotenv';
 config();
 
 import {
@@ -13,18 +14,30 @@ import {join} from 'node:path';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 
-// CORRECTION 1 : On utilise __dirname pour compatibilité universelle
 const browserDistFolder = join(__dirname, '../browser');
 
 const app = express();
-const angularApp = new AngularNodeAppEngine();
+
+// CORRECTION 2 : Initialisation sécurisée d'Angular
+// Si le manifest est absent (cas sur la VM), on ne fait pas planter le serveur
+let angularApp: any;
+try {
+  angularApp = new AngularNodeAppEngine();
+} catch (error) {
+  console.warn("⚠️ AVERTISSEMENT: Moteur Angular non chargé (Manifest manquant).");
+  console.warn("   Le serveur démarre en mode API uniquement.");
+  // On crée un faux moteur pour que le code plus bas ne plante pas
+  angularApp = {
+    handle: () => Promise.resolve(null)
+  };
+}
 
 // Middleware pour parser le JSON
 app.use(express.json());
 
 // Configuration CORS
 app.use(cors({
-  origin: process.env['APP_URL'],
+  origin: process.env['APP_URL'] || '*', // Accepte tout par défaut si pas de variable
   credentials: true
 }));
 
@@ -37,13 +50,13 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// CORRECTION 2 : Health check complet pour satisfaire le test
+// Endpoint de santé (Requis pour les tests CI)
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime(), // Requis par le test
-    ai_connection: !!process.env['MISTRAL_API_KEY'] // Requis par le test
+    uptime: process.uptime(),
+    ai_connection: !!process.env['MISTRAL_API_KEY']
   });
 });
 
@@ -210,25 +223,21 @@ app.use(
 );
 
 app.use((req, res, next) => {
+  // On utilise notre variable sécurisée ici
   angularApp
     .handle(req)
-    .then((response) =>
+    .then((response: any) =>
       response ? writeResponseToNodeResponse(response, res) : next(),
     )
     .catch(next);
 });
 
-// CORRECTION 3 : Lancement du serveur compatible Jest
 if (require.main === module) {
   const port = process.env['PORT'] || 4000;
-  app.listen(port, (error) => {
-    if (error) {
-      throw error;
-    }
+  app.listen(port, () => {
     console.log(`Node Express server listening on http://localhost:${port}`);
   });
 }
 
-// CORRECTION 4 : Export indispensable pour les tests
 export const reqHandler = createNodeRequestHandler(app);
 export { app };
