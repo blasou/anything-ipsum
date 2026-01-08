@@ -1,22 +1,15 @@
+/** @type {import('ts-jest').JestConfigWithTsJest} */
 module.exports = {
+  preset: 'ts-jest',
   testEnvironment: 'node',
-  
-  // Configuration pour lire le TypeScript
   transform: {
-    '^.+\\.[tj]s$': ['ts-jest', {
-      tsconfig: {
-        // Ces deux options sont vitales pour éviter l'erreur "express is not a function"
-        esModuleInterop: true,
-        allowSyntheticDefaultImports: true
-      }
+    // Indique à Jest d'utiliser ts-jest pour tous les fichiers .ts
+    '^.+\\.ts$': ['ts-jest', {
+      tsconfig: 'tsconfig.json',
+      isolatedModules: true, // Accélère la compilation pour les tests
     }],
   },
-
-  // Redirection magique : quand le serveur demande Angular, on lui donne notre fichier vide
-  moduleNameMapper: {
-    '^@angular/ssr/node$': '<rootDir>/src/mock-angular.js'
-  },
-
-  moduleFileExtensions: ['ts', 'js', 'json'],
-  rootDir: '.',
+  moduleFileExtensions: ['ts', 'js', 'json', 'node'],
+  // Ignore le dossier de build angular pour éviter les conflits
+  modulePathIgnorePatterns: ['<rootDir>/dist/', '<rootDir>/browser/'],
 };
