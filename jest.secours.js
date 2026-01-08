@@ -3,13 +3,17 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   transform: {
-    // Indique à Jest d'utiliser ts-jest pour tous les fichiers .ts
+    // On capture tous les fichiers .ts
     '^.+\\.ts$': ['ts-jest', {
-      tsconfig: 'tsconfig.json',
-      isolatedModules: true, // Accélère la compilation pour les tests
+      // On force la compilation en CommonJS (le format que Jest préfère)
+      // Cela écrase la configuration par défaut d'Angular qui est en ESM
+      tsconfig: {
+        module: 'commonjs',
+        esModuleInterop: true,
+      },
+      isolatedModules: true,
     }],
   },
-  moduleFileExtensions: ['ts', 'js', 'json', 'node'],
-  // Ignore le dossier de build angular pour éviter les conflits
+  // On ignore le build Angular pour ne pas tester deux fois
   modulePathIgnorePatterns: ['<rootDir>/dist/', '<rootDir>/browser/'],
 };
